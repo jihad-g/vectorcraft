@@ -1,0 +1,81 @@
+# Android APK: the browser build wrapped in a WebView (packaging/android). Run it from the Actions
+# tab (Run workflow) or by pushing a change under the paths below; download the APK from the run's
+# artifacts.
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packaging/android/**"
+      - "crates/ui-egui/src/mobile.rs"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust with the wasm target
+        run: |
+          rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
+          rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-web
+
+      - name: Install trunk
+        run: |
+          curl -fsSL https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-gnu.tar.gz | sudo tar -xz -C /usr/local/bin \
+            || cargo install trunk --locked --version 0.21.14
+          trunk --version
+
+      # The fonts the web build serves beside the wasm (same pin as the release workflow).
+      - uses: actions/checkout@v4
+        with:
+          repository: storytold/craft-fonts
+          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          path: craft-fonts
+
+      - name: Build the web app and copy it into the Android project
+        run: CRAFT_FONTS_DIR="$GITHUB_WORKSPACE/craft-fonts" packaging/android/build-web.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Debug APK
+        working-directory: packaging/android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Release APK (when signing secrets are set)
+        working-directory: packaging/android
+        env:
+          VC_KEYSTORE_BASE64: ${{ secrets.VC_KEYSTORE_BASE64 }}
+          VC_KEYSTORE_PASSWORD: ${{ secrets.VC_KEYSTORE_PASSWORD }}
+          VC_KEY_ALIAS: ${{ secrets.VC_KEY_ALIAS }}
+          VC_KEY_PASSWORD: ${{ secrets.VC_KEY_PASSWORD }}
+        run: |
+          if [ -z "$VC_KEYSTORE_BASE64" ]; then echo "no signing secrets: skipping"; exit 0; fi
+          echo "$VC_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          VC_KEYSTORE="$RUNNER_TEMP/release.jks" gradle --no-daemon assembleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vectorcraft-android
+          path: packaging/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

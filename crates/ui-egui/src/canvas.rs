@@ -3001,71 +3001,82 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
             .inner_margin(egui::Margin::symmetric(8, 6))
             .shadow(egui::epaint::Shadow { offset: [0, 3], blur: 10, spread: 0, color: Color32::from_black_alpha(70) })
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 6.0;
-                    let (g, grip) = ui.allocate_exact_size(vec2(4.0, 28.0), Sense::drag());
-                    let active = grip.hovered() || grip.dragged();
-                    ui.painter().rect_filled(g.shrink2(vec2(0.5, 4.0)), CornerRadius::same(2), if active { t.text_dim } else { t.button_border });
-                    if grip.dragged() {
-                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
-                        moved = grip.drag_delta();
-                    } else if grip.hovered() {
-                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
-                    }
-                    for (label, icon, cmd, params) in &items {
-                        let galley = ui.painter().layout_no_wrap(label.to_string(), egui::FontId::proportional(13.0), t.text_strong);
-                        let (r, resp) = ui.allocate_exact_size(vec2(galley.size().x + 38.0, 30.0), Sense::click());
-                        if resp.hovered() {
-                            ui.painter().rect_filled(r, CornerRadius::same(3), t.hover);
-                        }
-                        ui.painter().rect_stroke(r, CornerRadius::same(3), Stroke::new(1.0, t.button_border), StrokeKind::Inside);
-                        crate::icons::paint(ui, icon, egui::Rect::from_min_size(r.min + vec2(8.0, 7.0), vec2(16.0, 16.0)), t.icon);
-                        ui.painter().galley(pos2(r.left() + 30.0, r.center().y - galley.size().y / 2.0), galley, t.text_strong);
-                        if resp.clicked() {
-                            run = Some((*cmd, params.clone()));
-                        }
-                    }
-                    // The selected objects' Fill, Recolor Artwork and Lock, left out with the Artboard tool.
-                    if !on_artboards {
-                        let (r, resp) = ui.allocate_exact_size(vec2(26.0, 30.0), Sense::click());
-                        widgets::paint_chip(ui, egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)), &fill);
-                        ui.painter().rect_stroke(
-                            egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)),
-                            0.0,
-                            Stroke::new(1.0, t.button_border),
-                            StrokeKind::Outside,
-                        );
-                        if resp.on_hover_text(tl!("Fill")).clicked() {
-                            app.session.fill_active = true;
-                            app.ui.open_panel = Some("swatches".into());
-                        }
-                        // Recolor Artwork, when the selection has colours to recolour.
-                        if colored && widgets::icon_button(ui, "palette", tl!("Recolor Artwork"), false, 30.0).clicked() {
-                            run = Some(("ui.recolorDialog", json!({})));
-                        }
-                        if widgets::icon_button(ui, "lock", tl!("Lock (⌘2)"), false, 30.0).clicked() {
-                            run = Some(("object.lock", json!({})));
-                        }
-                    }
-                    let more = widgets::icon_button(ui, "ellipsis", tl!("More Options"), false, 30.0);
-                    egui::Popup::menu(&more).show(|ui| {
-                        ui.set_min_width(170.0);
-                        let bar = [
-                            (tl!("Hide Bar"), "window.taskBar", false),
-                            (tl!("Pin Bar Position"), "window.taskBar.pin", pinned),
-                            (tl!("Reset Bar Position"), "window.taskBar.reset", false),
-                        ];
-                        for (label, cmd, checked) in bar {
-                            if widgets::menu_item(ui, label, true, checked) {
-                                run = Some((cmd, json!({})));
+                // Narrower than the bar (a phone): its buttons scroll sideways inside the canvas.
+                ui.set_max_width((bounds.width() - 16.0).max(120.0));
+                egui::ScrollArea::horizontal()
+                    .id_salt("task-bar-scroll")
+                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 6.0;
+                            let (g, grip) = ui.allocate_exact_size(vec2(4.0, 28.0), Sense::drag());
+                            let active = grip.hovered() || grip.dragged();
+                            ui.painter().rect_filled(
+                                g.shrink2(vec2(0.5, 4.0)),
+                                CornerRadius::same(2),
+                                if active { t.text_dim } else { t.button_border },
+                            );
+                            if grip.dragged() {
+                                ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                moved = grip.drag_delta();
+                            } else if grip.hovered() {
+                                ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
                             }
-                        }
-                        ui.separator();
-                        if widgets::menu_item(ui, tl!("Show Properties Panel"), true, false) {
-                            run = Some(("window.panel", json!({"panel": "properties"})));
-                        }
+                            for (label, icon, cmd, params) in &items {
+                                let galley = ui.painter().layout_no_wrap(label.to_string(), egui::FontId::proportional(13.0), t.text_strong);
+                                let (r, resp) = ui.allocate_exact_size(vec2(galley.size().x + 38.0, 30.0), Sense::click());
+                                if resp.hovered() {
+                                    ui.painter().rect_filled(r, CornerRadius::same(3), t.hover);
+                                }
+                                ui.painter().rect_stroke(r, CornerRadius::same(3), Stroke::new(1.0, t.button_border), StrokeKind::Inside);
+                                crate::icons::paint(ui, icon, egui::Rect::from_min_size(r.min + vec2(8.0, 7.0), vec2(16.0, 16.0)), t.icon);
+                                ui.painter().galley(pos2(r.left() + 30.0, r.center().y - galley.size().y / 2.0), galley, t.text_strong);
+                                if resp.clicked() {
+                                    run = Some((*cmd, params.clone()));
+                                }
+                            }
+                            // The selected objects' Fill, Recolor Artwork and Lock, left out with the Artboard tool.
+                            if !on_artboards {
+                                let (r, resp) = ui.allocate_exact_size(vec2(26.0, 30.0), Sense::click());
+                                widgets::paint_chip(ui, egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)), &fill);
+                                ui.painter().rect_stroke(
+                                    egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)),
+                                    0.0,
+                                    Stroke::new(1.0, t.button_border),
+                                    StrokeKind::Outside,
+                                );
+                                if resp.on_hover_text(tl!("Fill")).clicked() {
+                                    app.session.fill_active = true;
+                                    app.ui.open_panel = Some("swatches".into());
+                                }
+                                // Recolor Artwork, when the selection has colours to recolour.
+                                if colored && widgets::icon_button(ui, "palette", tl!("Recolor Artwork"), false, 30.0).clicked() {
+                                    run = Some(("ui.recolorDialog", json!({})));
+                                }
+                                if widgets::icon_button(ui, "lock", tl!("Lock (⌘2)"), false, 30.0).clicked() {
+                                    run = Some(("object.lock", json!({})));
+                                }
+                            }
+                            let more = widgets::icon_button(ui, "ellipsis", tl!("More Options"), false, 30.0);
+                            egui::Popup::menu(&more).show(|ui| {
+                                ui.set_min_width(170.0);
+                                let bar = [
+                                    (tl!("Hide Bar"), "window.taskBar", false),
+                                    (tl!("Pin Bar Position"), "window.taskBar.pin", pinned),
+                                    (tl!("Reset Bar Position"), "window.taskBar.reset", false),
+                                ];
+                                for (label, cmd, checked) in bar {
+                                    if widgets::menu_item(ui, label, true, checked) {
+                                        run = Some((cmd, json!({})));
+                                    }
+                                }
+                                ui.separator();
+                                if widgets::menu_item(ui, tl!("Show Properties Panel"), true, false) {
+                                    run = Some(("window.panel", json!({"panel": "properties"})));
+                                }
+                            });
+                        })
                     });
-                });
             });
     });
     if moved != Vec2::ZERO {

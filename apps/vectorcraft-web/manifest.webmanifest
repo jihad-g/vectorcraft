@@ -1,0 +1,14 @@
+{
+  "name": "VectorCraft",
+  "short_name": "VectorCraft",
+  "description": "Vector illustration in the browser",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#262626",
+  "theme_color": "#262626",
+  "icons": [
+    { "src": "vectorcraft-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}

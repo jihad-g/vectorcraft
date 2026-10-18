@@ -292,6 +292,11 @@ Edit › Keyboard Shortcuts (entry `panel:<id>`, every panel) and pressed with `
 the Window menu's items.
 `window.panel` takes a panel id in any case or the panel's display label (`"Layers"`, `"Color Guide"`).
 
+Phone layout: `window.phoneLayout {layout?: "auto"|"on"|"off"}` (Window › Phone Layout; omitted cycles). Auto uses it in
+windows narrower than 600 pt: a top bar (Menu, Home, the document's name, Undo, Redo, Panels), the toolbar's slots in a
+bar along the bottom (a tap on the active slot or a long press shows its group above the bar) and one panel at a time
+in a bottom sheet; `window.panel` opens its panel there. Escape closes the menu list, then the group, then the sheet.
+
 Collapsing the dock: `window.collapseDock {collapsed?}` (the » at the top of the dock; omitted toggles) hides the
 Properties | Layers | Libraries group and puts its three panels as icons at the top of the icon column, under a «
 that expands them again. While collapsed, those icons and `window.panel {panel: "properties"|"layers"|"libraries"}`

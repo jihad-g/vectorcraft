@@ -358,6 +358,9 @@ pub struct UiState {
     /// Presentation Mode came back on restart with no way out).
     #[serde(skip)]
     pub screen_mode: u8,
+    /// Window › Phone Layout: Auto (narrow windows), On or Off (`crate::mobile`).
+    #[serde(default)]
+    pub phone_layout: crate::mobile::PhoneLayout,
     /// Draw Normal / Behind / Inside.
     pub draw_mode: u8,
     pub about: bool,
@@ -758,6 +761,7 @@ impl Default for UiState {
             palette_open: false,
             palette_query: String::new(),
             screen_mode: 0,
+            phone_layout: crate::mobile::PhoneLayout::Auto,
             draw_mode: 0,
             about: false,
             action_sets: crate::panels::actions::default_sets(),

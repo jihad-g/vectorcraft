@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VectorCraft</string>
+    <string name="saved">Saved %1$s</string>
+    <string name="save_failed">Could not save %1$s</string>
+    <string name="back_again">Press back again to exit</string>
+</resources>

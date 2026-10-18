@@ -1,0 +1,11 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+# Filled by build-web.sh from dist/web and assets/app-icon
+app/src/main/assets/web/
+app/src/main/res/mipmap-*/
+*.jks
+*.keystore

@@ -36,6 +36,7 @@ pub mod icon_data;
 pub mod icons;
 pub mod io;
 pub mod menus;
+pub mod mobile;
 pub mod native_menu;
 pub mod opening;
 pub mod palette;
@@ -1412,34 +1413,44 @@ impl VectorcraftApp {
         font_menu::end_stale_preview(self, &ctx);
         floating::track(self, &ctx);
         let t = theme::Tokens::get(&ctx);
-        if self.ui.screen_mode < 2 {
+        // Phones: the touch layout's bars and sheet instead of the desktop chrome (`mobile`).
+        let phone = mobile::active(self, &ctx) && self.ui.screen_mode < 3;
+        if phone {
+            mobile::show(self, ui);
+            panels::library_panel::tidy(self);
+        }
+        if !phone && self.ui.screen_mode < 2 {
             chrome::app_bar(self, ui);
             if self.ui.control_bar {
                 chrome::control_bar(self, ui);
             }
         }
-        if self.ui.status_bar && self.ui.screen_mode < 3 {
+        if !phone && self.ui.status_bar && self.ui.screen_mode < 3 {
             chrome::status_bar(self, ui);
             chrome::hint_bar(self, ui);
         } else {
             // Keeps the previous frame's value valid for menus drawn above, before the bars.
             widgets::set_menu_floor(&ctx, ctx.content_rect().bottom());
         }
-        if self.ui.toolbar && self.ui.screen_mode < 3 {
-            toolbar::show(self, ui);
-        }
-        panels::library_panel::tidy(self);
-        if self.ui.dock && self.ui.screen_mode < 3 {
-            dock::show(self, ui);
+        if !phone {
+            if self.ui.toolbar && self.ui.screen_mode < 3 {
+                toolbar::show(self, ui);
+            }
+            panels::library_panel::tidy(self);
+            if self.ui.dock && self.ui.screen_mode < 3 {
+                dock::show(self, ui);
+            }
         }
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
-            if self.ui.screen_mode < 3 {
+            if self.ui.screen_mode < 3 && !phone {
                 chrome::doc_tabs(self, ui);
             }
             canvas::show(self, ui);
         });
-        dock::floating_panel(self, &ctx);
-        floating::show(self, &ctx);
+        if !phone {
+            dock::floating_panel(self, &ctx);
+            floating::show(self, &ctx);
+        }
         dialogs::show(self, &ctx);
         export_progress::show(self, &ctx);
         palette::show(self, &ctx);

@@ -369,6 +369,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{panel: id or \"tools\", group?: bool, column?: true or n} put a floating panel (with `group`, its whole group) back in the dock, as dropping it on the dock or its group's × does: Properties, Layers and Libraries in the tabbed group, the other panels in the icon column; with `column`, dock its group and the rest of its set as a dock column instead, as dropping it on the left edge of the icon column or of a dock column does: `true` at the dock's left, n at that place (1: next to the icon column, counting left); \"tools\" docks the Tools panel at the window's left edge. Returns {panel, floating, column}",
     ),
     (
+        "window.phoneLayout",
+        "Phone Layout",
+        "",
+        "{layout?: auto|on|off} the touch layout for phones (top bar, bottom tool bar, panels in a bottom sheet): auto uses it in windows narrower than 600 pt; without `layout` it cycles auto → on → off; returns the new setting",
+    ),
+    (
         "window.collapseDock",
         "Collapse Panels to Icons",
         "",
@@ -1402,6 +1408,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             }
             Ok(json!(on))
         }
+        "window.phoneLayout" => crate::mobile::set(app, p),
         "window.collapseDock" => opt_bool(p, "collapsed").map(|collapsed| {
             let collapsed = collapsed.unwrap_or(!app.ui.dock_collapsed);
             crate::dock::set_collapsed(app, collapsed);
@@ -1796,6 +1803,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
                 _ => canonical.is_some_and(|id| app.ui.open_panel.as_deref() == Some(id)),
             }
         }
+        "window.phoneLayout" => p.get("layout").and_then(Value::as_str).and_then(crate::mobile::PhoneLayout::parse) == Some(app.ui.phone_layout),
         "window.collapseDock" => app.ui.dock_collapsed,
         "window.workspace" => p.get("name").and_then(Value::as_str) == Some(app.ui.workspace.as_str()),
         "window.brightness" => p.get("brightness").and_then(Value::as_str).and_then(Brightness::parse) == Some(app.ui.brightness),
@@ -2922,6 +2930,14 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Contextual Task Bar", "window.taskBar"),
                 c("Tools", "window.toolbar"),
                 sub("Toolbars", vec![c("Advanced", "window.toolbarAdvanced"), c("Double Column", "window.toolbarColumns")]),
+                sub(
+                    "Phone Layout",
+                    vec![
+                        cp("Auto", "window.phoneLayout", json!({ "layout": "auto" })),
+                        cp("On", "window.phoneLayout", json!({ "layout": "on" })),
+                        cp("Off", "window.phoneLayout", json!({ "layout": "off" })),
+                    ],
+                ),
                 Sep,
                 panel("Actions", "actions"),
                 panel("Align", "align"),
